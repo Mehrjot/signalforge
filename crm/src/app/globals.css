@@ -1,0 +1,118 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme tokens. Dark is the default; [data-theme="light"] overrides them. */
+:root,
+[data-theme="dark"] {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface-2: #1a1a26;
+  --line: #262634;
+  --primary: #7c6af7;
+  --primary-soft: #9c8ff9;
+  --live: #00e5a0;
+  --warn: #f5a524;
+  --danger: #ff5c7c;
+  --ink: #f0eef8;
+  --muted: #6b6880;
+  --muted-2: #4a4860;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f6f5fb;
+  --surface: #ffffff;
+  --surface-2: #f0eef8;
+  --line: #e4e1f0;
+  --primary: #6d5ae8;
+  --primary-soft: #5b48d6;
+  --live: #00a674;
+  --warn: #c97f12;
+  --danger: #e0436a;
+  --ink: #1a1726;
+  --muted: #6b6880;
+  --muted-2: #9a97ad;
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .card-2 {
+    @apply rounded-xl;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .label {
+    @apply font-mono text-[11px] uppercase tracking-[0.18em];
+    color: var(--muted);
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn text-white;
+    background: var(--primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 50%, transparent),
+      0 8px 30px -8px color-mix(in srgb, var(--primary) 60%, transparent);
+  }
+  .btn-primary:hover {
+    background: var(--primary-soft);
+  }
+  .btn-ghost {
+    @apply btn;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-ghost:hover {
+    background: var(--surface-2);
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+}
+
+.glow-text {
+  text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

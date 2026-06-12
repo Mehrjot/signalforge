@@ -1,0 +1,131 @@
+// ============================================================
+//  Xeno Marketing OS — Data Model
+//  An opinionated CRM schema for reaching shoppers.
+//  Default: SQLite (zero-setup local dev).
+//  For production, switch provider to "postgresql".
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A shopper of the brand.
+model Customer {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  phone           String
+  city            String
+  // Channel affinity scores (0-100) — how responsive on each channel.
+  // These are seeded from simulated history and drive the AI's channel pick.
+  whatsappScore   Int      @default(50)
+  emailScore      Int      @default(50)
+  smsScore        Int      @default(50)
+  // Lifetime metrics (denormalised for fast reads).
+  totalSpend      Float    @default(0)
+  orderCount      Int      @default(0)
+  firstOrderAt    DateTime?
+  lastOrderAt     DateTime?
+  // AI-generated "Digital Twin" — a natural language personality profile.
+  twinSummary     String?
+  twinTraits      String?  // JSON array of short trait tags
+  twinGeneratedAt DateTime?
+  createdAt       DateTime @default(now())
+
+  orders          Order[]
+  communications  Communication[]
+}
+
+// A purchase made by a customer.
+model Order {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  category    String   // e.g. "Ethnic Wear", "Cold Brew", "Skincare"
+  items       String   // JSON array of line items
+  amount      Float
+  placedAt    DateTime
+  // If this order was driven by a campaign, we link it for attribution.
+  attributedCommunicationId String?
+
+  createdAt   DateTime @default(now())
+}
+
+// A campaign = a goal + a chosen audience + generated messages.
+model Campaign {
+  id            String   @id @default(cuid())
+  name          String
+  goalText      String   // the marketer's natural-language intent
+  status        String   @default("draft") // draft | launching | live | completed
+  channel       String   // chosen channel (or "smart" = per-customer)
+  // The AI's segmentation reasoning, stored for explainability.
+  segmentReason String?
+  // Snapshot of the message template the AI proposed.
+  messageTemplate String?
+  // What-If simulator output (JSON) captured at launch time.
+  simulation    String?
+  audienceSize  Int      @default(0)
+  // Aggregate stats (updated by the receipt callback loop).
+  sentCount      Int     @default(0)
+  deliveredCount Int     @default(0)
+  openedCount    Int     @default(0)
+  readCount      Int     @default(0)
+  clickedCount   Int     @default(0)
+  failedCount    Int     @default(0)
+  attributedRevenue Float @default(0)
+  attributedOrders  Int   @default(0)
+  // AI-generated post-campaign insight.
+  insight        String?
+
+  createdAt     DateTime @default(now())
+  launchedAt    DateTime?
+  completedAt   DateTime?
+
+  communications Communication[]
+}
+
+// One message to one customer. The unit the channel service operates on.
+model Communication {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  channel     String   // whatsapp | email | sms | rcs
+  message     String   // the personalised message body
+  // Lifecycle state. Advances via channel-service callbacks.
+  status      String   @default("queued") // queued|sent|delivered|opened|read|clicked|failed
+  // Why was this customer selected? (explainability)
+  selectionReason String?
+  confidence  Int?     // 0-100 AI confidence this customer converts
+
+  // Timestamps for each lifecycle event (null until it happens).
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  readAt      DateTime?
+  clickedAt   DateTime?
+  failedAt    DateTime?
+  failReason  String?
+  // Retry bookkeeping for the callback loop.
+  retryCount  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  events      CommEvent[]
+}
+
+// Append-only log of every lifecycle event — powers the War Room feed.
+model CommEvent {
+  id              String   @id @default(cuid())
+  communicationId String
+  communication   Communication @relation(fields: [communicationId], references: [id])
+  type            String   // sent|delivered|opened|read|clicked|failed|converted
+  detail          String?
+  at              DateTime @default(now())
+}
